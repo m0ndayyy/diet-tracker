@@ -2,9 +2,6 @@ from datetime import date
 import json
 import os
 
-diet_structure = '{ "date" : "", "cal_count" : 0, "foods" : [], "protein" : 0, "carbs" : 0, "fat" : 0}'
-diet_snapshot = None
-user_prof = None
 paragraph = "===================================================="
 path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'profiles')
 
@@ -27,25 +24,33 @@ def boot_up():
         for profile in profiles:
             count = count + 1
             print(str(count) + ". " + profile[:profile.rfind(".")].title())
+        
+        count += 1
+        print(str(count) + ". Create new profile")
 
         #Select one of the profiles
         choice = int(input("Please select the profile you would like to load (1-" + str(count) + "): "))
 
-        #Load the path
-        filepath = os.path.join(path, profiles[choice - 1])
-        with open(filepath, 'r') as openfile:
-            user_prof = json.load(openfile)
-        
-        #Close out the interaction
-        print(paragraph)
-        print("Welcome, " + user_prof["name"] + "!")
-        print(paragraph)
-        main_menu()
-            
+        if not choice == count:
+            #Load the path
+            global profile_path
+            profile_path = os.path.join(path, profiles[choice - 1])
+            with open(profile_path, 'r') as openfile:
+                global user_prof
+                user_prof = json.load(openfile)
 
+            #Close out the interaction
+            print(paragraph)
+            print("Welcome, " + user_prof["name"] + "!")
+            print(paragraph)
+            main_menu()       
+        else:
+            new_profile()
+        
 
 #Main menu
 def main_menu():
+    print("Account: " + user_prof["name"])
     choice = 0
     choice = input("1. Start new day\n2. Add food to current day\n3. Edit/Create Profile\n4. Exit\nYour input (1, 2, 3, or 4): ")
     if (choice == "1"):
@@ -60,10 +65,25 @@ def main_menu():
 
 #Start a new day
 def start_day():
-    diet_snapshot = json.loads(diet_structure)
-    diet_snapshot["date"] = date.today()
-    print(diet_snapshot["date"])
-    print(diet_snapshot)
+    days = user_prof["snapshots"]
+
+    if (len(days) == 0) or ((not len(days) == 0) and (not days[0]["date"] == str(date.today()))):
+        diet_structure = '{ "date" : "", "cal_count" : 0, "foods" : [], "protein" : 0, "carbs" : 0, "fat" : 0}'
+        global diet_snapshot
+        diet_snapshot = json.loads(diet_structure)
+        diet_snapshot["date"] = str(date.today())
+
+        days.insert(0, diet_snapshot)
+        with open(profile_path, "w") as outfile:
+            json.dump(user_prof, outfile)
+        
+        print("New snapshot for " + str(date.today()) + " created. Go ahead and add food to it!")
+        main_menu()
+
+    else:
+        print("You already have a diet snapshot for today, please add food to it!.")
+        print(paragraph)
+        main_menu()
 
 #BMR calculator
 def bmr_calc(gender, height, weight, age):
@@ -97,13 +117,17 @@ def new_profile():
     profile["carb_goal"] = int(profile["cal_goal"] * .45 / 4)
     
     #Write to json file
-    filepath = os.path.join(path, profile["name"].lower() + ".json")
-    with open(filepath, "w") as outfile:
+    global profile_path
+    profile_path = os.path.join(path, profile["name"].lower() + ".json")
+    with open(profile_path, "w") as outfile:
         json.dump(profile, outfile)
     
+    global user_prof
+    user_prof = profile
+
     #Close out the Interaction
     print(paragraph)
-    print("Successfully created your profile!")
+    print("Successfully created your profile! It is currently logged in!")
     print("Calorie Goal: " + str(profile["cal_goal"]))
     print("Protein Goal: " + str(profile["prot_goal"]))
     print("Carbohydrate Goal: " + str(profile["carb_goal"]))
@@ -126,9 +150,8 @@ def profile_menu():
 
 
 #Run Script
-print("Welcome to your daily diet tracker!\nPlease type the number from the following menu of the action you wish to perform!")
+print("Welcome to your daily diet tracker!")
 print(paragraph)
-print(os.path.dirname(os.path.realpath(__file__)))
 boot_up()
 
 
