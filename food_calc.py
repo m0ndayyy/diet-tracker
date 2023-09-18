@@ -60,8 +60,7 @@ def boot_up():
         else:
             diet_snapshot = None
             new_profile()
-            main_menu()
-        
+            main_menu()     
 
 #Main menu
 def main_menu():
@@ -81,6 +80,59 @@ def main_menu():
         snapshot_breakdown()
         main_menu()
 
+#Food Menu
+def food_menu():
+    choice = input("1. Create new food item\n2. Add existing food item\n3. Back\nYour input (1, 2, or 3): ")
+    if (choice == "1"):
+        print(paragraph)
+        new_food()
+    elif (choice == "2"):
+        existing_food()
+    else:
+        print(paragraph)
+        main_menu()
+
+#Create or edit profile or go back to main menu
+def profile_menu():
+    choice = input("1. Create new profile\n2. Edit profile\n3. Back\nYour input (1, 2, or 3): ")
+    if (choice == "1"):
+        new_profile()
+        profile_menu()
+    elif (choice == "2"):
+        edit_profile()
+    else: 
+        print(paragraph)
+        main_menu()
+
+#Start a new day
+def start_day():
+    create_diet_snapshot()
+    main_menu()
+
+def create_diet_snapshot():
+    days = user_prof["snapshots"]
+
+    if (len(days) == 0) or ((not len(days) == 0) and (not days[0]["date"] == str(date.today()))):
+        diet_structure = '{ "date" : "", "cal_count" : 0, "foods" : [], "protein" : 0, "carbs" : 0, "fat" : 0}'
+        global diet_snapshot
+        diet_snapshot = json.loads(diet_structure)
+        diet_snapshot["date"] = str(date.today())
+        diet_snapshot["cal_count"] = user_prof["cal_goal"]
+        diet_snapshot["protein"] = user_prof["prot_goal"]
+        diet_snapshot["carbs"] = user_prof["carb_goal"]
+        diet_snapshot["fat"] = user_prof["fat_goal"]
+
+        days.insert(0, diet_snapshot)
+        with open(user_path, "w") as outfile:
+            json.dump(user_prof, outfile)
+        
+        print("New snapshot for " + str(date.today()) + " created. Go ahead and add food to it!")
+        print(paragraph)
+
+    else:
+        print("You already have a diet snapshot for today, please add food to it!.")
+        print(paragraph)
+
 def new_food():
     if not os.path.exists(food_path):
         os.makedirs(food_path)
@@ -94,20 +146,21 @@ def new_food():
         if not os.path.exists(food_group_path):
             os.makedirs(food_group_path)
         
-        food_item = json.loads('{"name": "", "cal": 0, "protein": 0, "carb": 0, "fat": 0}')
+        food_item = json.loads('{"name": "", "serving": 0, "cal": 0, "protein": 0, "carb": 0, "fat": 0}')
         print("Please enter the nutrition info as you see on the packet, or as you have calculated.")
         food_item["name"] = input("Please enter the name of this food item: ")
 
-        weight = float(input("How many grams per serving: "))
+        serving = float(input("How many grams per serving: "))
         calories = float(input("How many calories per serving: "))
         protein = float(input("How much protein per serving (g): "))
         carbs = float(input("How many carbohydrates per serving (g): "))
         fat = float(input("How much fat per serving (g): "))
 
-        food_item["cal"] = calories / weight
-        food_item["protein"] = protein / weight
-        food_item["carb"] = carbs / weight
-        food_item["fat"] = fat / weight
+        food_item["serving"] = serving
+        food_item["cal"] = calories / serving
+        food_item["protein"] = protein / serving
+        food_item["carb"] = carbs / serving
+        food_item["fat"] = fat / serving
 
         food_item_path = os.path.join(food_group_path, food_item["name"].lower() + ".json")
         with open(food_item_path, "w") as outfile:
@@ -119,74 +172,6 @@ def new_food():
             add_to_snapshot(food_item)
     else:
         food_menu()
-
-def add_to_snapshot(food):
-    global diet_snapshot
-    if (diet_snapshot == None):
-        print("It seems like you didn't start a new snapshot.")
-        create_diet_snapshot()
-        add_macros(food)
-    elif (diet_snapshot["date"] != str(date.today())):
-        print("The current snapshot does not match with todays date.")
-        choice = input("Would you like to override this? (y/n): ")
-        if choice.lower() == "y" or choice.lower() == "yes":
-            add_macros(food)
-        else:
-            create_diet_snapshot()
-            add_macros(food)
-    else:
-        add_macros(food)
-    
-
-def add_macros(food):
-    choice = float(input("How much of this food in grams did you eat?\nYour input (g): "))
-    calories = round(food["cal"] * choice, 1)
-    carbs = round(food["carb"] * choice, 1)
-    protein = round(food["protein"] * choice, 1)
-    fat = round(food["fat"] * choice, 1)
-
-    serving = json.loads('{"name": "", "cal": 0, "protein": 0, "carb": 0, "fat": 0}')
-    serving["name"] = food["name"]
-    serving["cal"] = calories
-    serving["carb"] = carbs
-    serving["fat"] = fat
-    serving["protein"] = protein
-
-    diet_snapshot["cal_count"] = int(diet_snapshot["cal_count"] - calories)
-    diet_snapshot["protein"] = diet_snapshot["protein"] - protein
-    diet_snapshot["carbs"] = diet_snapshot["carbs"] - carbs
-    diet_snapshot["fat"] = diet_snapshot["fat"] - fat
-
-    diet_snapshot["foods"].append(serving)
-
-    user_prof["snapshots"][0] = diet_snapshot
-
-    with open(user_path, "w") as outfile:
-        json.dump(user_prof, outfile)
-
-    print(paragraph)
-    snapshot_breakdown()
-    food_menu()
-
-def snapshot_breakdown():
-    print("Here are the remaining macros you have leftover for today:")
-    print("Leftover Calories: " + str(diet_snapshot["cal_count"]))
-    print("Leftover Protein: " + str(diet_snapshot["protein"]))
-    print("Leftover Carbohydrates: " + str(diet_snapshot["carbs"]))
-    print("Leftover Fat: " + str(diet_snapshot["fat"]))
-    print(paragraph)
-
-#Food Menu
-def food_menu():
-    choice = input("1. Create new food item\n2. Add existing food item\n3. Back\nYour input (1, 2, or 3): ")
-    if (choice == "1"):
-        print(paragraph)
-        new_food()
-    elif (choice == "2"):
-        existing_food()
-    else:
-        print(paragraph)
-        main_menu()
 
 def existing_food():
     if not os.path.exists(food_path):
@@ -229,46 +214,53 @@ def existing_food():
                 else:
                     existing_food()
 
-
-
-
-
-#Start a new day
-def start_day():
-    create_diet_snapshot()
-    main_menu()
-
-def create_diet_snapshot():
-    days = user_prof["snapshots"]
-
-    if (len(days) == 0) or ((not len(days) == 0) and (not days[0]["date"] == str(date.today()))):
-        diet_structure = '{ "date" : "", "cal_count" : 0, "foods" : [], "protein" : 0, "carbs" : 0, "fat" : 0}'
-        global diet_snapshot
-        diet_snapshot = json.loads(diet_structure)
-        diet_snapshot["date"] = str(date.today())
-        diet_snapshot["cal_count"] = user_prof["cal_goal"]
-        diet_snapshot["protein"] = user_prof["prot_goal"]
-        diet_snapshot["carbs"] = user_prof["carb_goal"]
-        diet_snapshot["fat"] = user_prof["fat_goal"]
-
-        days.insert(0, diet_snapshot)
-        with open(user_path, "w") as outfile:
-            json.dump(user_prof, outfile)
-        
-        print("New snapshot for " + str(date.today()) + " created. Go ahead and add food to it!")
-        print(paragraph)
-
+def add_to_snapshot(food):
+    global diet_snapshot
+    if (diet_snapshot == None):
+        print("It seems like you didn't start a new snapshot.")
+        create_diet_snapshot()
+        add_macros(food)
+    elif (diet_snapshot["date"] != str(date.today())):
+        print("The current snapshot does not match with todays date.")
+        choice = input("Would you like to override this? (y/n): ")
+        if choice.lower() == "y" or choice.lower() == "yes":
+            add_macros(food)
+        else:
+            create_diet_snapshot()
+            add_macros(food)
     else:
-        print("You already have a diet snapshot for today, please add food to it!.")
-        print(paragraph)
+        add_macros(food)
+    
 
+def add_macros(food):
+    choice = float(input("How much of this food in grams did you eat?\nOne serving is " + str(food["serving"]) + " gram(s).\nYour input (g): "))
+    calories = round(food["cal"] * choice, 1)
+    carbs = round(food["carb"] * choice, 1)
+    protein = round(food["protein"] * choice, 1)
+    fat = round(food["fat"] * choice, 1)
 
-#BMR calculator
-def bmr_calc(gender, height, weight, age):
-    if (gender == "1"):
-        return int(88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age))
-    else:
-        return int(447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age))
+    serving = json.loads('{"name": "", "cal": 0, "protein": 0, "carb": 0, "fat": 0}')
+    serving["name"] = food["name"]
+    serving["cal"] = calories
+    serving["carb"] = carbs
+    serving["fat"] = fat
+    serving["protein"] = protein
+
+    diet_snapshot["cal_count"] = int(diet_snapshot["cal_count"] - calories)
+    diet_snapshot["protein"] = round(diet_snapshot["protein"] - protein, 1)
+    diet_snapshot["carbs"] = round(diet_snapshot["carbs"] - carbs, 1)
+    diet_snapshot["fat"] = round(diet_snapshot["fat"] - fat, 1)
+
+    diet_snapshot["foods"].append(serving)
+
+    user_prof["snapshots"][0] = diet_snapshot
+
+    with open(user_path, "w") as outfile:
+        json.dump(user_prof, outfile)
+
+    print(paragraph)
+    snapshot_breakdown()
+    food_menu()
     
 #Create a new profile
 def new_profile():
@@ -312,20 +304,40 @@ def new_profile():
     print("Fat Goal: " + str(profile["fat_goal"]))
     print(paragraph)
 
+def edit_profile():
+    attributes = ["cal_goal", "prot_goal", "carb_goal", "fat_goal"]
+    print("Account: " + user_prof["name"])
+    print("1. Calorie Goal: " + str(user_prof["cal_goal"]))
+    print("2. Protein Goal: " + str(user_prof["prot_goal"]))
+    print("3. Carbohydrate Goal: " + str(user_prof["carb_goal"]))
+    print("4. Fat Goal: " + str(user_prof["fat_goal"]))
+    print("5. Back")
+    choice = int(input("Select the attribute you would like to change (1, 2, 3, or 4): "))
 
-#Create or edit profile or go back to main menu
-def profile_menu():
-    choice = input("1. Create new profile\n2. Edit profile\n3. Back\nYour input (1, 2, or 3): ")
-    if (choice == "1"):
-        new_profile()
+    if not choice == 5:
+        goal = choice
+        choice = int(input("What should the new value be?: "))
+        user_prof[attributes[goal - 1]] = choice
+        with open(user_path, "w") as outfile:
+            json.dump(user_prof, outfile)
+        edit_profile()
+    else:
         profile_menu()
-    elif (choice == "2"):
-        print("nothing")
-    else: 
-        print(paragraph)
-        main_menu()
 
+#BMR calculator
+def bmr_calc(gender, height, weight, age):
+    if (gender == "1"):
+        return int(88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age))
+    else:
+        return int(447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age))
 
+def snapshot_breakdown():
+    print("Here are the remaining macros you have leftover for today:")
+    print("Leftover Calories: " + str(diet_snapshot["cal_count"]))
+    print("Leftover Protein: " + str(diet_snapshot["protein"]))
+    print("Leftover Carbohydrates: " + str(diet_snapshot["carbs"]))
+    print("Leftover Fat: " + str(diet_snapshot["fat"]))
+    print(paragraph)
 
 #Run Script
 print("Welcome to your daily diet tracker!")
