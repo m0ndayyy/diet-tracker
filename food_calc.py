@@ -213,6 +213,8 @@ def existing_food():
                     add_to_snapshot(food_item)
                 else:
                     existing_food()
+    else:
+        food_menu()
 
 def add_to_snapshot(food):
     global diet_snapshot
@@ -320,8 +322,10 @@ def edit_profile():
         user_prof[attributes[goal - 1]] = choice
         with open(user_path, "w") as outfile:
             json.dump(user_prof, outfile)
+        print(paragraph)
         edit_profile()
     else:
+        print(paragraph)
         profile_menu()
 
 #BMR calculator
