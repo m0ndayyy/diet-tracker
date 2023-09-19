@@ -416,6 +416,7 @@ def food_breakdown():
         data_menu()
     else:
         print("You haven't consumed any foods today, add them to your snapshot then come back!")
+        print(paragraph)
         data_menu()
         
 
