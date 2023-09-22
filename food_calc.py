@@ -196,6 +196,8 @@ def new_food():
         print(paragraph)
         if choice.lower() == "y" or choice.lower() == "yes":  
             add_to_snapshot(food_item)
+        else:
+            new_food()
     else:
         food_menu()
 
@@ -401,7 +403,7 @@ def food_breakdown():
 
     if not len(consumed) == 0:
         for food in consumed:
-            print(str(food["name"]) + "| Cal: " + str(food["cal"]) + " | Protein: " + str(food["protein"]) + " | Carbs: " + str(food["carb"]) + " | Fat: " + str(food["fat"]))
+            print(str(food["name"]) + " | Cal: " + str(food["cal"]) + " | Protein: " + str(food["protein"]) + " | Carbs: " + str(food["carb"]) + " | Fat: " + str(food["fat"]))
             print()
             cals += food["cal"]
             protein += food["protein"]
